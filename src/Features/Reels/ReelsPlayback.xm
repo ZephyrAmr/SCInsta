@@ -28,26 +28,35 @@
 }
 %end
 
+static BOOL didConfirmRefresh = NO;
+
 %hook IGSundialFeedViewController
 - (void)_refreshReelsWithParamsForNetworkRequest:(NSInteger)arg1 userDidPullToRefresh:(BOOL)arg2 {
     if ([SCIUtils getBoolPref:@"prevent_doom_scrolling"]) {
         IGRefreshControl *_refreshControl = MSHookIvar<IGRefreshControl *>(self, "_refreshControl");
         [self refreshControlDidEndFinishLoadingAnimation:_refreshControl];
-
         return;
     }
 
     if ([SCIUtils getBoolPref:@"refresh_reel_confirm"]) {
+        if (didConfirmRefresh) {
+            didConfirmRefresh = NO; 
+            %orig(arg1, arg2);
+            return;
+        }
+
         NSLog(@"[SCInsta] Reel refresh triggered");
         
-        [SCIUtils showConfirmation:^(void) { %orig(arg1, arg2); }
-                     cancelHandler:^(void) {
-                         IGRefreshControl *_refreshControl = MSHookIvar<IGRefreshControl *>(self, "_refreshControl");
-                         [self refreshControlDidEndFinishLoadingAnimation:_refreshControl];
-                     }
-                             title:@"Refresh Reels"];
+        [SCIUtils showConfirmation:^(void) {
+            didConfirmRefresh = YES;
+            [self _refreshReelsWithParamsForNetworkRequest:arg1 userDidPullToRefresh:arg2];
+        } cancelHandler:^(void) {
+            IGRefreshControl *_refreshControl = MSHookIvar<IGRefreshControl *>(self, "_refreshControl");
+            [self refreshControlDidEndFinishLoadingAnimation:_refreshControl];
+        } title:@"Refresh Reels"];
+        
     } else {
-        return %orig(arg1, arg2);
+        %orig(arg1, arg2);
     }
 }
 %end
