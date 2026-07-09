@@ -768,15 +768,15 @@ shouldPersistLastBugReportId:(id)arg6
 // Disable safe mode (defaults reset upon subsequent crashes)
 %hook IGSafeModeChecker
 - (id)initWithInstacrashCounterProvider:(void *)provider crashThreshold:(unsigned long long)threshold {
-    if ([SCIUtils getBoolPref:@"disable_safe_mode"]) return nil;
-
-    return %orig(provider, threshold);
+    if ([SCIUtils getBoolPref:@"disable_safe_mode"]) {
+        return nil;
+    }
+    return %orig;
 }
 - (unsigned long long)crashCount {
     if ([SCIUtils getBoolPref:@"disable_safe_mode"]) {
         return 0;
     }
-
     return %orig;
 }
 %end
